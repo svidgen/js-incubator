@@ -1,4 +1,5 @@
 const express = require('express');
+const qrcode = require('qrcode-terminal');
 const natpmp = require('nat-pmp');
 
 module.exports = async () => {
@@ -31,7 +32,10 @@ module.exports = async () => {
 			});
 
 			app.listen(port);
-			console.log(`listening on ${ip}:${info.public} ... `);
+
+			const url = `http://${ip}:${info.public}/`;
+			qrcode.generate(url);
+			console.log(`Listening on ${url}`);
 
 		});
 	} catch (err) {

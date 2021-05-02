@@ -5,13 +5,14 @@
   "main": "./lib/index.js",
   "scripts": {
     "test": "jest -w 1",
-    "main": "./bin/index.js"
+    "start": "./bin/index.js"
   },
   "author": "Jon Wire",
   "license": "MIT",
   "dependencies": {
     "express": "^4.17.1",
     "nat-pmp": "^1.0.0",
+    "qrcode-terminal": "^0.12.0",
     "upnpjs": "^1.1.1"
   }
 }
