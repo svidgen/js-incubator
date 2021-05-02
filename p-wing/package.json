@@ -1,0 +1,16 @@
+{
+  "name": "p-wing",
+  "version": "1.0.0",
+  "description": "The Peer hosted world-wide-web.",
+  "main": "./lib/index.js",
+  "scripts": {
+    "test": "jest -w 1",
+    "main": "./bin/index.js"
+  },
+  "author": "Jon Wire",
+  "license": "MIT",
+  "dependencies": {
+    "nat-pmp": "^1.0.0",
+    "upnpjs": "^1.1.1"
+  }
+}
