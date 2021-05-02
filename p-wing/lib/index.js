@@ -30,8 +30,8 @@ module.exports = async () => {
 				response.send('Hello world');
 			});
 
-			app.listen();
-			console.log(`listening on ${ip}:${port} ... `);
+			app.listen(port);
+			console.log(`listening on ${ip}:${info.public} ... `);
 
 		});
 	} catch (err) {
