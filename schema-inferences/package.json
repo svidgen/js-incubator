@@ -1,0 +1,14 @@
+{
+  "name": "schema-inferences",
+  "version": "1.0.0",
+  "description": "Prototyping playground for schema inference rules.",
+  "main": "./lib/index.js",
+  "scripts": {
+    "test": "jest -w 1"
+  },
+  "author": "Jon Wire",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^27.0.5"
+  }
+}
