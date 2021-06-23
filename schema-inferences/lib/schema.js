@@ -1,7 +1,7 @@
 class Schema {
 	constructor({models, rules = standardRules}) {
 		this._models = models;
-		this.rules = rules;
+		this.rules = Object.values(rules);
 
 		this._models.forEach(m => m.schema = this);
 	};
@@ -22,10 +22,16 @@ class Schema {
 		return this.fields.map(field => field.directives).flat();
 	};
 
+	get directives() {
+		return [...this.modelDirectives, this.fieldDirectives];
+	};
+
 	get inferences() {
 		return this.rules.reduce((inferences, rule) => {
 			let targets;
-			if (rule.targetType === Model) {
+			if (rule.targetType === Schema) {
+				targets = [this];
+			} else if (rule.targetType === Model) {
 				targets = this.models;
 			} else if (rule.targetType === Field) {
 				targets = this.fields;
@@ -98,11 +104,56 @@ class Rule {
 	}
 };
 
-const standardRules = [
-	new Rule(Model, 'Sample Model rule',
-		model => true,
-		model => console.log(`called on ${model.name}`)
+// shortcut: partial types list including "bangs" ... yyyeah. wouldn't do it like this for real!
+const PrimitiveTypes = [
+	'ID', 'ID!',
+	'String', 'String!'
+]
+
+const Rules = {
+	AddMissingPK: new Rule(Model, 'implicit PK',
+		model => !model.directives.find(d => d instanceof PrimaryKey),
+		model => {
+			// transform
+		}
 	),
+	AddMissingFK: new Rule(Field, 'implicit FK',
+		field => {
+			const allModelNames = field.model.schema.models.map(model => model.name);
+			if (allModelNames.indexOf(field.type) < 0) {
+				return false;
+			}
+			const FKName = field.name + 'ID';
+			const FKType = 'ID!';
+			return !field.model.fields.find(f => f.name === FKName && f.type === FKType);
+		},
+		field => {
+			// transform
+		}
+	),
+	AddMissingJoinTable: new Rule(Field, 'join table',
+		field => {
+			const allModels = field.model.schema.models;
+			const manyref = field.type.match(/^\[(\w+)\]$/);
+			if (manyref) {
+				const refModel = allModels.find(model => model.name === manyref[1]);
+				if (refModel.fields.find(f => f.type === `[${field.model.name}]`)) {
+					return true;
+				}
+			}
+			return false;
+		},
+		field => {
+			// transform
+		}
+	)
+};
+
+// standard rules and their order of application
+const standardRules = [
+	Rules.AddMissingFK,
+	Rules.AddMissingPK,
+	Rules.AddMissingJoinTable
 ];
 
 module.exports = {
@@ -111,5 +162,6 @@ module.exports = {
 	Field,
 	Key,
 	PrimaryKey,
-	Index
+	Index,
+	Rules
 };
