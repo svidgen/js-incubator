@@ -1,10 +1,17 @@
+import {
+	INPUTS,
+	OUTPUTS,
+	TRAINING_LOOPS,
+	TRAINING_DATA,
+	LAYERS,
+	TEST_CASES
+} from './examples/evens.js';
 
 const SIGMOID = v => 1/(1 + Math.pow(Math.E, -v));
 const SIGMOID_THRESHOLD = v => 1/(1 + Math.pow(Math.E, -v)) > 0.5;
 const THRESHOLD = v => v > 0;
 const BIAS = 1;
 const LEARN_RATE = 0.05;
-const BITS = 8;
 
 const sum = values => {
 	let rv = 0;
@@ -108,45 +115,21 @@ class Brain {
 	}
 }
 
-function asBooleanArray(n, bits = BITS) {
-	const s = ('00000000000000000000000000000000' + n.toString(2));
-	return s.substring(s.length - bits).split('').map(b => b === '1');
-}
-
 class App {
 	run() {
-		const brain = new Brain({inputs: BITS, outputs: 1, layers: 2});
-		for (let i = 0; i < 100; i++) {
-			brain.learn({
-				input: asBooleanArray(2),
-				expected: [1]
-			});
-			brain.learn({
-				input: asBooleanArray(3),
-				expected: [0]
-			});
-			brain.learn({
-				input: asBooleanArray(4),
-				expected: [1]
-			});
-			brain.learn({
-				input: asBooleanArray(5),
-				expected: [0]
-			});
-			brain.learn({
-				input: asBooleanArray(6),
-				expected: [1]
-			});
-			brain.learn({
-				input: asBooleanArray(7),
-				expected: [0]
-			});
+		const brain = new Brain({
+			inputs: INPUTS, outputs: OUTPUTS, layers: LAYERS
+		});
+		for (let i = 0; i < TRAINING_LOOPS; i++) {
+			for (const {input, expected} of TRAINING_DATA) {
+				brain.learn({input, expected});
+			}
 		}
 		console.log(JSON.stringify({brain}, null, 2));
-		console.log(brain.think(asBooleanArray(112)), ' =?= true');
-		console.log(brain.think(asBooleanArray(113)), ' =?= false');
-		console.log(brain.think(asBooleanArray(114)), ' =?= true');
-		console.log(brain.think(asBooleanArray(115)), ' =?= false');
+		for (const {input, expected} of TEST_CASES) {
+			const output = brain.think(input);
+			console.log({input, output, expected});
+		}
 	}
 }
 
