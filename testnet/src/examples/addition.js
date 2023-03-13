@@ -1,4 +1,7 @@
 import { asBooleanArray } from '../util.js';
+import { Brain } from '../brains/binary.js';
+
+export const BRAIN = Brain;
 
 export const BITS = 8;
 export const INPUTS = BITS * 2;
