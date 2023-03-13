@@ -1,12 +1,3 @@
-import {
-	INPUTS,
-	OUTPUTS,
-	TRAINING_LOOPS,
-	TRAINING_DATA,
-	LAYERS,
-	TEST_CASES
-} from './examples/evens.js';
-
 const SIGMOID = v => 1/(1 + Math.pow(Math.E, -v));
 const SIGMOID_THRESHOLD = v => 1/(1 + Math.pow(Math.E, -v)) > 0.5;
 const THRESHOLD = v => v > 0;
@@ -29,7 +20,8 @@ class Neuron {
 
 	constructor({inputs}) {
 		this.inputs = inputs;
-		this.weights = this.inputs.map(() => 1 - Math.random());
+		this.weights = this.inputs.map(() => Math.random() - 0.5);
+		// this.weights = this.inputs.map(() => 0);
 	}
 
 	toJSON() {
@@ -43,7 +35,7 @@ class Neuron {
 	get output() {
 		return this.activation(
 			this.bias * sum(weighted(
-				this.inputs.map(i => i.output),
+				this.inputs.map(i => i.output ? 1 : -1),
 				this.weights
 			))
 		);
@@ -116,20 +108,41 @@ class Brain {
 }
 
 class App {
-	run() {
+	async run(name = 'evens') {
+		const {
+			INPUTS,
+			OUTPUTS,
+			TRAINING_LOOPS,
+			TRAINING_DATA,
+			LAYERS,
+			TEST_CASES
+		} = await import(`./examples/${name}.js`);
+
 		const brain = new Brain({
 			inputs: INPUTS, outputs: OUTPUTS, layers: LAYERS
 		});
 		for (let i = 0; i < TRAINING_LOOPS; i++) {
+			process.stdout.write(`\rtraining loop ${i}`);
 			for (const {input, expected} of TRAINING_DATA) {
 				brain.learn({input, expected});
 			}
 		}
+		console.log();
 		console.log(JSON.stringify({brain}, null, 2));
+
+		let matches = 0;
+		let count = 0;
 		for (const {input, expected} of TEST_CASES) {
+			process.stdout.write(`\rchecking test case ${count}`);
 			const output = brain.think(input);
-			console.log({input, output, expected});
+		 	// console.log({input, output, expected});
+			if (JSON.stringify(output) == JSON.stringify(expected)) {
+				matches += 1;
+			}
+			count++;
 		}
+		console.log();
+		console.log('success rate', matches / count);
 	}
 }
 
