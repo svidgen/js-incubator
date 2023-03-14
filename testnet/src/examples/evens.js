@@ -40,3 +40,7 @@ for (let i = 0; i < 255; i++) {
 		]
 	});
 }
+
+export const TEST = {
+	matches: (a, b) => JSON.stringify(a) == JSON.stringify(b)
+};

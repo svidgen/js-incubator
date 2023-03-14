@@ -7,7 +7,8 @@ class App {
 			TRAINING_LOOPS,
 			TRAINING_DATA,
 			LAYERS,
-			TEST_CASES
+			TEST_CASES,
+			TEST,
 		} = await import(`./examples/${name}.js`);
 
 		const Brain = brainOverride ?
@@ -32,8 +33,7 @@ class App {
 		for (const {input, expected} of TEST_CASES) {
 			process.stdout.write(`\rchecking test case ${count}`);
 			const output = brain.think(input);
-		 	// console.log({input, output, expected});
-			if (JSON.stringify(output) == JSON.stringify(expected)) {
+			if (TEST.matches(output, expected)) {
 				matches += 1;
 			}
 			count++;
