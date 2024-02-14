@@ -1,6 +1,6 @@
 const LINEAR = x => x;
 const D_LINEAR = x => 1;
-const BIAS = 1;
+const BIAS = 0;
 const LEARN_RATE = 0.01;
 
 const sum = values => {
@@ -9,7 +9,7 @@ const sum = values => {
 	return rv;
 };
 
-const weighted = (values, weights) => values.map((v, i) => v * weights[i]);
+const weighted = (values, weights) => weights.map((w, i) => w * (values[i] || 0));
 
 class Neuron {
 	weights = [];
@@ -33,7 +33,7 @@ class Neuron {
 	}
 
 	weighted(inputs) {
-		return this.weights.map((w, i) => w * (this.inputs[i] || 0));
+		return this.weights.map((w, i) => w * this.inputs[i]);
 	}
 
 	think(inputs) {
@@ -42,16 +42,24 @@ class Neuron {
 	}
 
 	learn(error) {
-		const errors = [];
+		// console.log('neuron correcting for error', error);
+		const inputErrors = [];
 		for (let i = 0; i < this.weights.length; i++) {
-			errors[i] = this.derivative(this.weights[i]) * (this.inputs[i] || 0);
-			this.weights[i] = this.weights[i] - errors[i];
+			inputErrors[i] =
+				error * this.derivative(this.weights[i]) * this.inputs[i];
+			this.weights[i] = this.weights[i] + LEARN_RATE * inputErrors[i];
 			if (isNaN(this.weights[i])) {
-				console.log({errors, weights: this.weights, inputs: this.inputs});
+				console.log({
+					error,
+					inputErrors,
+					weights: this.weights,
+					inputs: this.inputs
+				});
 				throw new Error("Bad training!");
 			}
 		}
-		return errors;
+		// console.log('neuron returning backprop errors', inputErrors);
+		return inputErrors;
 	}
 }
 
@@ -83,25 +91,33 @@ export class Brain {
 	}
 
 	learn({input, expected}) {
+		console.log('brain learn', {input, expected});
 		let output = this.think(input);
 		let errors = expected.map((e, i) => e - output[i]);
-		for (const layer of this.layers.reverse()) {
-			let newErrors = [];
+		for (const layer of [...this.layers].reverse()) {
+			// console.log(JSON.stringify({errors, layer}, null, 2));
+			const newErrors = [];
 			for (const [i, neuron] of layer.entries()) {
+				// if (errors[i] === undefined || errors[i] === null) continue;
 				const neuronErrors = neuron.learn(errors[i]);
-				newErrors[i] = (newErrors[i] || 0) + neuronErrors[i];
+				for (const [error_i, error] of neuronErrors.entries()) {
+					newErrors[error_i] = (newErrors[error_i] || 0) + error;
+				}
 			}
 			errors = newErrors;
+			// console.log('errors to backpropagate', errors);
 		}
 	}
 
 	think(input) {
 		let data = input;
-		console.log({input: data});
+		console.log('brain think', {input: data});
 		for (const layer of this.layers) {
-			data = layer.map(n => n.think(data));
-			console.log({data});
+			const newData = layer.map(n => n.think(data));
+			data = newData;
+			// console.log('data from layer', {data});
 		}
+		console.log('brain done thinking');
 		return data;
 	}
 }
