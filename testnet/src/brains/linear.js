@@ -1,6 +1,7 @@
 const LINEAR = x => x;
+const D_LINEAR = x => 1;
 const BIAS = 1;
-const LEARN_RATE = 0.05;
+const LEARN_RATE = 0.01;
 
 const sum = values => {
 	let rv = 0;
@@ -11,15 +12,16 @@ const sum = values => {
 const weighted = (values, weights) => values.map((v, i) => v * weights[i]);
 
 class Neuron {
-	inputs = [];
 	weights = [];
+	inputs = [];
 	bias = BIAS;
 	activation = LINEAR;
+	derivative = D_LINEAR;
 
 	constructor({inputs}) {
-		this.inputs = inputs;
-		this.weights = this.inputs.map(() => Math.random() - 0.5);
-		// this.weights = this.inputs.map(() => 0);
+		for (let i = 0; i < inputs.length; i++) {
+			this.weights[i] = Math.random() - 0.5;
+		}
 	}
 
 	toJSON() {
@@ -30,46 +32,42 @@ class Neuron {
 		};
 	}
 
-	get output() {
-		return this.activation(
-			this.bias * sum(weighted(
-				this.inputs.map(i => i.output ? 1 : -1),
-				this.weights
-			))
-		);
+	weighted(inputs) {
+		return this.weights.map((w, i) => w * (this.inputs[i] || 0));
 	}
 
-	learn(target) {
-		const error = target - this.output;
-		// console.log({target, output: this.output});
-		for (let i = 0; i < this.inputs.length; i++) {
-			this.inputs[i].learn?.(target * this.weights[i]);
-			this.weights[i] = this.weights[i] + LEARN_RATE * error;
+	think(inputs) {
+		this.inputs = inputs;
+		return this.activation(sum(this.weighted(inputs))) + this.bias;
+	}
+
+	learn(error) {
+		const errors = [];
+		for (let i = 0; i < this.weights.length; i++) {
+			errors[i] = this.derivative(this.weights[i]) * (this.inputs[i] || 0);
+			this.weights[i] = this.weights[i] - errors[i];
+			if (isNaN(this.weights[i])) {
+				console.log({errors, weights: this.weights, inputs: this.inputs});
+				throw new Error("Bad training!");
+			}
 		}
+		return errors;
 	}
-}
-
-class Input {
-	output;
 }
 
 export class Brain {
 	layers = [];
+	inputs;
 
 	constructor({inputs = 1, outputs = 1, layers = 1}) {
-		const inputLayer = [];
-		for (let input_i = 0; input_i < inputs; input_i++) {
-			inputLayer.push(new Input());
-		}
-		this.layers.push(inputLayer);
-
+		this.inputs = inputs;
 		for (let layer_i = 0; layer_i < layers; layer_i++) {
 			const isFinal = layer_i === layers - 1;
 			const neurons = isFinal ? outputs : inputs;
 			const layer = [];
 			for (let output_i = 0; output_i < neurons; output_i++) {
 				layer.push(new Neuron({
-					inputs: this.layers[this.layers.length - 1]
+					inputs: this.layers[this.layers.length - 1] || Array(inputs)
 				}));
 			}
 			this.layers.push(layer);
@@ -85,19 +83,25 @@ export class Brain {
 	}
 
 	learn({input, expected}) {
-		for (let i = 0; i < this.inputs.length; i++) {
-			this.inputs[i].output = input[i];
-		}
-
-		for (let i = 0; i < this.outputs.length; i++) {
-			this.outputs[i].learn(expected[i]);
+		let output = this.think(input);
+		let errors = expected.map((e, i) => e - output[i]);
+		for (const layer of this.layers.reverse()) {
+			let newErrors = [];
+			for (const [i, neuron] of layer.entries()) {
+				const neuronErrors = neuron.learn(errors[i]);
+				newErrors[i] = (newErrors[i] || 0) + neuronErrors[i];
+			}
+			errors = newErrors;
 		}
 	}
 
 	think(input) {
-		for (let i = 0; i < this.inputs.length; i++) {
-			this.inputs[i].output = input[i];
+		let data = input;
+		console.log({input: data});
+		for (const layer of this.layers) {
+			data = layer.map(n => n.think(data));
+			console.log({data});
 		}
-		return this.outputs.map(o => o.output);
+		return data;
 	}
 }

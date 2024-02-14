@@ -7,7 +7,7 @@ export const INPUTS = 2;
 export const OUTPUTS = 1;
 
 export const TRAINING_LOOPS = 50;
-export const LAYERS = 5;
+export const LAYERS = 2;
 
 export const TRAINING_DATA = [];
 for (let i = 0; i < 20; i++) {
