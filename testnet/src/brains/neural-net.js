@@ -55,6 +55,7 @@ class Neuron {
 					error,
 					inputErrors,
 					i,
+					derivative: this.derivative(this.weights[i]),
 					weights: this.weights,
 					inputs: this.inputs,
 					newWeight,
@@ -106,7 +107,7 @@ export class Brain {
 			// console.log(JSON.stringify({errors, layer}, null, 2));
 			const newErrors = [];
 			for (const [i, neuron] of layer.entries()) {
-				// if (errors[i] === undefined || errors[i] === null) continue;
+				if (!errors[i]) continue;
 				const neuronErrors = neuron.learn(errors[i]);
 				for (const [error_i, error] of neuronErrors.entries()) {
 					newErrors[error_i] = (newErrors[error_i] || 0) + error;

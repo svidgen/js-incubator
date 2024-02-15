@@ -10,7 +10,8 @@ export const TRAINING_LOOPS = 1000;
 export const LAYERS = 3;
 
 export const brain = new Brain({
-	shape: [INPUTS, INPUTS * 2, OUTPUTS]
+	shape: [INPUTS, INPUTS * 2, OUTPUTS],
+	activation: x => Math.min(Math.max(0, x), 1)
 });
 
 export const TRAINING_DATA = [];
