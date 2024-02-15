@@ -75,7 +75,7 @@ export class Brain {
 
 	constructor({
 		shape = [8, 8, 8],
-		activation = x => x
+		activation = x => 1/(Math.pow(Math.E, -x))
 	}) {
 		this.inputs = shape[0];
 		for (let layer_i = 1; layer_i < shape.length; layer_i++) {
@@ -107,8 +107,8 @@ export class Brain {
 			// console.log(JSON.stringify({errors, layer}, null, 2));
 			const newErrors = [];
 			for (const [i, neuron] of layer.entries()) {
-				if (!errors[i]) {
-					console.log('missing error', {
+				if (!Number.isFinite(errors[i])) {
+					console.log('bad error', {
 						output, input, expected,
 						neuron, i
 					});

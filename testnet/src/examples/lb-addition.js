@@ -6,17 +6,16 @@ export const MAX_INT = Math.pow(2, BITS);
 export const INPUTS = BITS * 2;
 export const OUTPUTS = BITS * 2;
 
-export const TRAINING_LOOPS = 1000;
-export const LAYERS = 3;
+export const TRAINING_LOOPS = 10;
 
 export const brain = new Brain({
-	shape: [INPUTS, INPUTS * 2, OUTPUTS],
+	shape: [INPUTS, INPUTS, INPUTS * 2, INPUTS, OUTPUTS],
 	// activation: x => Math.min(Math.max(0, x), 1)
 	activation: x => 1/Math.pow(Math.E, -x)
 });
 
 export const TRAINING_DATA = [];
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 5000; i++) {
 	const a = Math.floor(Math.random() * MAX_INT);
 	const b = Math.floor(Math.random() * MAX_INT);
 	TRAINING_DATA.push({
@@ -37,8 +36,8 @@ for (let i = 0; i < 100; i++) {
 
 export const TEST = {
 	matches: (output, expected) => {
-		const outputVal = fromNumberArray(output, 0.5);
-		const expectedVal = fromNumberArray(expected, 0.5);
+		const outputVal = fromNumberArray(output, 0.8);
+		const expectedVal = fromNumberArray(expected, 0.8);
 		console.log({output, expected, outputVal, expectedVal});
 		return Math.abs(outputVal - expectedVal) < 1;
 	}
