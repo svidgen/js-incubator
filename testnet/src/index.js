@@ -1,24 +1,13 @@
 class App {
 	async run(name = 'evens', brainOverride = undefined) {
 		const {
-			BRAIN,
-			INPUTS,
-			OUTPUTS,
+			brain,
 			TRAINING_LOOPS,
 			TRAINING_DATA,
-			LAYERS,
 			TEST_CASES,
 			TEST,
 		} = await import(`./examples/${name}.js`);
 
-		const Brain = brainOverride ?
-			await import(`./src/brains/${brain}.js`) :
-			BRAIN
-		;
-
-		const brain = new Brain({
-			inputs: INPUTS, outputs: OUTPUTS, layers: LAYERS
-		});
 		for (let i = 0; i < TRAINING_LOOPS; i++) {
 			process.stdout.write(`\rtraining loop ${i}`);
 			for (const {input, expected} of TRAINING_DATA) {

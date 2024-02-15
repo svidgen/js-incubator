@@ -7,7 +7,7 @@ export const BITS = 8;
 export const INPUTS = 8;
 export const OUTPUTS = 1;
 
-export const TRAINING_LOOPS = 1000;
+export const TRAINING_LOOPS = 10000;
 export const LAYERS = 2;
 
 export const TRAINING_DATA = [

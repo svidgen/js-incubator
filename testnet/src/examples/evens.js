@@ -1,8 +1,6 @@
 import { asBooleanArray } from '../util.js';
 import { Brain } from '../brains/binary.js';
 
-export const BRAIN = Brain;
-
 export const BITS = 8;
 export const INPUTS = 8;
 export const OUTPUTS = 2;
@@ -28,6 +26,12 @@ export const TRAINING_DATA = [
 		expected: [0, 1]
 	},
 ];
+
+export const brain = new Brain({
+	inputs: INPUTS,
+	outputs: OUTPUTS,
+	layers: LAYERS,
+});
 
 export const TEST_CASES = [];
 

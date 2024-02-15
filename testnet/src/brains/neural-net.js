@@ -1,5 +1,5 @@
-const LINEAR = x => x;
-const D_LINEAR = x => 1;
+import { dF } from '../util.js';
+
 const BIAS = 0;
 const LEARN_RATE = 0.01;
 
@@ -15,13 +15,15 @@ class Neuron {
 	weights = [];
 	inputs = [];
 	bias = BIAS;
-	activation = LINEAR;
-	derivative = D_LINEAR;
+	activation = x => x;
+	derivative = x => 1;
 
-	constructor({inputs}) {
+	constructor({inputs, activation, derivative}) {
 		for (let i = 0; i < inputs.length; i++) {
 			this.weights[i] = Math.random() - 0.5;
 		}
+		if (activation) this.activation = activation;
+		this.derivative = derivative || dF(activation);
 	}
 
 	toJSON() {
@@ -47,18 +49,19 @@ class Neuron {
 		for (let i = 0; i < this.weights.length; i++) {
 			inputErrors[i] =
 				error * this.derivative(this.weights[i]) * this.inputs[i];
-			this.weights[i] = this.weights[i] + LEARN_RATE * inputErrors[i];
-			if (isNaN(this.weights[i])) {
-				/*
+			const newWeight = this.weights[i] + LEARN_RATE * inputErrors[i];
+			if (isNaN(newWeight)) {
 				console.log({
 					error,
 					inputErrors,
+					i,
 					weights: this.weights,
-					inputs: this.inputs
+					inputs: this.inputs,
+					newWeight,
 				});
-				*/
 				throw new Error("Bad training!");
 			}
+			this.weights[i] = newWeight;
 		}
 		// console.log('neuron returning backprop errors', inputErrors);
 		return inputErrors;
@@ -69,15 +72,18 @@ export class Brain {
 	layers = [];
 	inputs;
 
-	constructor({inputs = 1, outputs = 1, layers = 1}) {
-		this.inputs = inputs;
-		for (let layer_i = 0; layer_i < layers; layer_i++) {
-			const isFinal = layer_i === layers - 1;
-			const neurons = isFinal ? outputs : inputs;
+	constructor({
+		shape = [8, 8, 8],
+		activation = x => x
+	}) {
+		this.inputs = shape[0];
+		for (let layer_i = 1; layer_i < shape.length; layer_i++) {
+			const neurons = shape[layer_i];
 			const layer = [];
 			for (let output_i = 0; output_i < neurons; output_i++) {
 				layer.push(new Neuron({
-					inputs: this.layers[this.layers.length - 1] || Array(inputs)
+					inputs: this.layers[this.layers.length - 1] || Array(shape[0]),
+					activation
 				}));
 			}
 			this.layers.push(layer);

@@ -1,17 +1,17 @@
 import { asIntArray, fromNumberArray } from '../util.js';
-import { Brain } from '../brains/neural-net.js';
+import { Brain } from '../brains/linear.js';
 
 export const BITS = 4;
 export const MAX_INT = Math.pow(2, BITS);
 export const INPUTS = BITS * 2;
-export const OUTPUTS = BITS * 2;
-
-export const TRAINING_LOOPS = 1000;
-export const LAYERS = 3;
+export const OUTPUTS = BITS;
+export const TRAINING_LOOPS = 500;
 
 export const brain = new Brain({
-	shape: [INPUTS, INPUTS * 2, OUTPUTS]
+	shape: [INPUTS, INPUTS * 2, INPUTS * 4, INPUTS * 2, OUTPUTS],
+	activation: x => Max.max(0, x)
 });
+
 
 export const TRAINING_DATA = [];
 for (let i = 0; i < 10; i++) {
