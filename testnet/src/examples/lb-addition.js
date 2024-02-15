@@ -11,7 +11,8 @@ export const LAYERS = 3;
 
 export const brain = new Brain({
 	shape: [INPUTS, INPUTS * 2, OUTPUTS],
-	activation: x => Math.min(Math.max(0, x), 1)
+	// activation: x => Math.min(Math.max(0, x), 1)
+	activation: x => 1/Math.pow(Math.E, -x)
 });
 
 export const TRAINING_DATA = [];
@@ -20,7 +21,7 @@ for (let i = 0; i < 10; i++) {
 	const b = Math.floor(Math.random() * MAX_INT);
 	TRAINING_DATA.push({
 		input: [...asIntArray(a, BITS), ...asIntArray(b, BITS)],
-		expected: [...asIntArray(Number(a) + Number(b), BITS)]
+		expected: [...asIntArray(Number(a) + Number(b), OUTPUTS)]
 	});
 }
 
@@ -30,15 +31,15 @@ for (let i = 0; i < 100; i++) {
 	const b = Math.floor(Math.random() * MAX_INT);
 	TEST_CASES.push({
 		input: [...asIntArray(a, BITS), ...asIntArray(b, BITS)],
-		expected: [...asIntArray(Number(a) + Number(b), BITS)]
+		expected: [...asIntArray(Number(a) + Number(b), OUTPUTS)]
 	});
 }
 
 export const TEST = {
-	matches: (a, b) => {
-		const aVal = fromNumberArray(a, 0.8);
-		const bVal = fromNumberArray(b, 0.8);
-		console.log({a, b, aVal, bVal});
-		return Math.abs(aVal - bVal) < 1;
+	matches: (output, expected) => {
+		const outputVal = fromNumberArray(output, 0.5);
+		const expectedVal = fromNumberArray(expected, 0.5);
+		console.log({output, expected, outputVal, expectedVal});
+		return Math.abs(outputVal - expectedVal) < 1;
 	}
 };

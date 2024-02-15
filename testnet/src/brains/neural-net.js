@@ -107,7 +107,14 @@ export class Brain {
 			// console.log(JSON.stringify({errors, layer}, null, 2));
 			const newErrors = [];
 			for (const [i, neuron] of layer.entries()) {
-				if (!errors[i]) continue;
+				if (!errors[i]) {
+					console.log('missing error', {
+						output, input, expected,
+						neuron, i
+					});
+					throw new Error('wtf');
+					continue;
+				}
 				const neuronErrors = neuron.learn(errors[i]);
 				for (const [error_i, error] of neuronErrors.entries()) {
 					newErrors[error_i] = (newErrors[error_i] || 0) + error;
