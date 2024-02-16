@@ -57,8 +57,10 @@ class Neuron {
 		const perInputError = error / this.inputs.length;
 		for (let i = 0; i < this.weights.length; i++) {
 			inputErrors[i] = perInputError;
-			const slope = this.derivative() * this.inputs[i];
-			if (slope === 0) continue;
+			let slope = this.derivative() * this.inputs[i];
+			if (slope === 0) {
+				slope = 1;
+			}
 			const correction = LEARN_RATE * (perInputError / slope);
 			const newWeight = this.weights[i] + correction;
 			if (isNaN(newWeight)) {

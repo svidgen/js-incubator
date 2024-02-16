@@ -1,3 +1,14 @@
+function formatPercent(decimal, bar = 25, digits = 6) {
+	const barBuffer = [
+		...[...Array(bar)].map(c => '='),
+		...[...Array(bar)].map(c => ' '),
+	].join('');
+	const barBufferIndex = Math.round(bar * (1 - decimal));
+	const fill = barBuffer.substring(barBufferIndex, barBufferIndex + bar);
+	const pct = `          ${(decimal * 100).toFixed(digits - 5)}%`;
+	return `[${fill}] ${pct.substring(pct.length - digits)}`;
+}
+
 class App {
 	async run(name = 'evens', brainOverride = undefined) {
 		const {
@@ -8,11 +19,20 @@ class App {
 			TEST,
 		} = await import(`./examples/${name}.js`);
 
-		for (let i = 0; i < TRAINING_LOOPS; i++) {
-			process.stdout.write(`\rtraining loop ${i}`);
-			for (const {input, expected} of TRAINING_DATA) {
+		for (let epoch = 0; epoch < TRAINING_LOOPS; epoch++) {
+			process.stdout.write(`epoch ${epoch} of ${TRAINING_LOOPS}`);
+			for (const [i, {input, expected}] of TRAINING_DATA.entries()) {
+				if (i % 123 === 0) {
+					const pct = formatPercent(i/TRAINING_DATA.length);
+					process.stdout.write(
+						`\repoch ${epoch} of ${TRAINING_LOOPS} ${pct}`
+					);
+				}
 				brain.learn({input, expected});
 			}
+			const pct = formatPercent(1);
+			process.stdout.write(`\repoch ${epoch} of ${TRAINING_LOOPS} ${pct}`);
+			console.log();
 		}
 		console.log();
 		console.log(JSON.stringify({brain}, null, 2));
