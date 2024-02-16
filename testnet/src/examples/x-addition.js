@@ -1,20 +1,21 @@
 import { asIntArray, fromNumberArray } from '../util.js';
-import { Brain } from '../brains/linear.js';
+import { Brain } from '../brains/neural-net.js';
 
-export const BITS = 4;
+export const BITS = 8;
 export const MAX_INT = Math.pow(2, BITS);
 export const INPUTS = BITS * 2;
 export const OUTPUTS = BITS;
-export const TRAINING_LOOPS = 500;
+export const TRAINING_LOOPS = 1000;
 
 export const brain = new Brain({
-	shape: [INPUTS, INPUTS * 2, INPUTS * 4, INPUTS * 2, OUTPUTS],
-	activation: x => Max.max(0, x)
+	shape: [INPUTS, INPUTS * 2, OUTPUTS],
+	activation: x => Math.min(Math.max(0, x), 1)
+	// activation: x => 1 / (1 + Math.pow(Math.E, -x))
 });
 
 
 export const TRAINING_DATA = [];
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 100; i++) {
 	const a = Math.floor(Math.random() * MAX_INT);
 	const b = Math.floor(Math.random() * MAX_INT);
 	TRAINING_DATA.push({

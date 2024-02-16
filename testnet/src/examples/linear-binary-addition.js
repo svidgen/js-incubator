@@ -9,13 +9,13 @@ export const OUTPUTS = BITS * 2;
 export const TRAINING_LOOPS = 10;
 
 export const brain = new Brain({
-	shape: [INPUTS, INPUTS, INPUTS * 2, INPUTS, OUTPUTS],
+	shape: [INPUTS, INPUTS * 4, INPUTS * 8, INPUTS * 4, OUTPUTS],
 	// activation: x => Math.min(Math.max(0, x), 1)
-	activation: x => 1/Math.pow(Math.E, -x)
+	// activation: x => 1/(1 + Math.pow(Math.E, -x))
 });
 
 export const TRAINING_DATA = [];
-for (let i = 0; i < 5000; i++) {
+for (let i = 0; i < 500; i++) {
 	const a = Math.floor(Math.random() * MAX_INT);
 	const b = Math.floor(Math.random() * MAX_INT);
 	TRAINING_DATA.push({

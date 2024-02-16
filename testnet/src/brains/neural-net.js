@@ -14,16 +14,18 @@ const weighted = (values, weights) => weights.map((w, i) => w * (values[i] || 0)
 class Neuron {
 	weights = [];
 	inputs = [];
+	z = 0;
+	output = 0;
 	bias = BIAS;
 	activation = x => x;
-	derivative = x => 1;
+	dF = x => 1;
 
 	constructor({inputs, activation, derivative}) {
 		for (let i = 0; i < inputs.length; i++) {
 			this.weights[i] = Math.random() - 0.5;
 		}
 		if (activation) this.activation = activation;
-		this.derivative = derivative || dF(activation);
+		this.dF = derivative || dF(activation);
 	}
 
 	toJSON() {
@@ -40,27 +42,37 @@ class Neuron {
 
 	think(inputs) {
 		this.inputs = inputs;
-		return this.activation(sum(this.weighted(inputs))) + this.bias;
+		this.z = sum(this.weighted(inputs)) + this.bias
+		this.output = this.activation(this.z);
+		return this.output;
+	}
+
+	derivative() {
+		return this.dF(this.z);
 	}
 
 	learn(error) {
 		// console.log('neuron correcting for error', error);
 		const inputErrors = [];
+		const perInputError = error / this.inputs.length;
 		for (let i = 0; i < this.weights.length; i++) {
-			inputErrors[i] =
-				error * this.derivative(this.weights[i]) * this.inputs[i];
-			const newWeight = this.weights[i] + LEARN_RATE * inputErrors[i];
+			inputErrors[i] = perInputError;
+			const slope = this.derivative() * this.inputs[i];
+			if (slope === 0) continue;
+			const correction = LEARN_RATE * (perInputError / slope);
+			const newWeight = this.weights[i] + correction;
 			if (isNaN(newWeight)) {
 				console.log({
-					error,
-					inputErrors,
-					i,
-					derivative: this.derivative(this.weights[i]),
-					weights: this.weights,
-					inputs: this.inputs,
+					input: this.inputs[i],
+					perInputError,
+					derivative: this.derivative(),
+					dF: this.dF.toString(),
+					slope,
+					correction,
+					weight: this.weights[i],
 					newWeight,
 				});
-				throw new Error("Bad training!");
+				// throw new Error("Bad training!");
 			}
 			this.weights[i] = newWeight;
 		}
@@ -75,7 +87,7 @@ export class Brain {
 
 	constructor({
 		shape = [8, 8, 8],
-		activation = x => 1/(Math.pow(Math.E, -x))
+		activation = x => 1/(1 + (Math.pow(Math.E, -x)))
 	}) {
 		this.inputs = shape[0];
 		for (let layer_i = 1; layer_i < shape.length; layer_i++) {
@@ -100,8 +112,8 @@ export class Brain {
 	}
 
 	learn({input, expected}) {
-		// console.log('brain learn', {input, expected});
 		let output = this.think(input);
+		// console.log('brain learn', {input, expected, output});
 		let errors = expected.map((e, i) => e - output[i]);
 		for (const layer of [...this.layers].reverse()) {
 			// console.log(JSON.stringify({errors, layer}, null, 2));
