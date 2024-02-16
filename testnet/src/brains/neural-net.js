@@ -9,6 +9,8 @@ const sum = values => {
 	return rv;
 };
 
+const bound = (value, lower, upper) => Math.max(Math.min(value, upper), lower);
+
 const weighted = (values, weights) => weights.map((w, i) => w * (values[i] || 0));
 
 class Neuron {
@@ -56,15 +58,33 @@ class Neuron {
 		// console.log('neuron correcting for error', error);
 		const inputErrors = [];
 		const perInputError = error / (this.inputs.length + 1);
-		this.bias = this.bias + LEARN_RATE * perInputError / this.derivative();
+
+		const biasCorrection = LEARN_RATE * perInputError / this.derivative();
+		const newBias = bound(this.bias + biasCorrection, -1, 1);
+		if (isNaN(newBias)) {
+			console.log({
+				inputs: this.inputs,
+				weights: this.weights,
+				z: this.z,
+				output: this.output,
+				error,
+				perInputError,
+				bias: this.bias,
+				newBias,
+				derivative: this.derivative(),
+				dF: this.dF.toString(),
+				biasCorrection,
+			});
+			throw new Error('bad bias update');
+		}
+		this.bias = newBias;
+
 		for (let i = 0; i < this.weights.length; i++) {
 			inputErrors[i] = perInputError;
 			let slope = this.derivative() * this.inputs[i];
-			if (slope === 0) {
-				slope = this.derivative() || 1;
-			}
+			if (slope === 0) continue;
 			const correction = LEARN_RATE * perInputError / slope;
-			const newWeight = this.weights[i] + correction;
+			const newWeight = bound(this.weights[i] + correction, -1, 1);
 			if (isNaN(newWeight) || false) {
 				console.log({
 					input: this.inputs[i],

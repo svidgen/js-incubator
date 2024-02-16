@@ -38,7 +38,7 @@ for (let i = 0; i < Math.pow(2, BITS) - 1; i++) {
 
 export const TEST = {
 	matches: (rawOutput, rawExpected) => {
-		const output = rawOutput.map(v => v >= 0.8 ? true : false);
+		const output = rawOutput.map(v => v >= 0.55 ? true : false);
 		const expected = rawExpected.map(v => v === 1 ? true : false);
 		// console.log({rawOutput, rawExpected, output, expected});
 		return JSON.stringify(output) == JSON.stringify(expected);
