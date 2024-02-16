@@ -23,6 +23,7 @@ class Neuron {
 	constructor({inputs, activation, derivative}) {
 		for (let i = 0; i < inputs.length; i++) {
 			this.weights[i] = Math.random() - 0.5;
+			// this.weights[i] = 0.5;
 		}
 		if (activation) this.activation = activation;
 		this.dF = derivative || dF(activation);
@@ -42,7 +43,7 @@ class Neuron {
 
 	think(inputs) {
 		this.inputs = inputs;
-		this.z = sum(this.weighted(inputs)) + this.bias
+		this.z = sum(this.weighted(inputs)) + this.bias;
 		this.output = this.activation(this.z);
 		return this.output;
 	}
@@ -54,18 +55,21 @@ class Neuron {
 	learn(error) {
 		// console.log('neuron correcting for error', error);
 		const inputErrors = [];
-		const perInputError = error / this.inputs.length;
+		const perInputError = error / (this.inputs.length + 1);
+		this.bias = this.bias + LEARN_RATE * perInputError / this.derivative();
 		for (let i = 0; i < this.weights.length; i++) {
 			inputErrors[i] = perInputError;
 			let slope = this.derivative() * this.inputs[i];
 			if (slope === 0) {
-				slope = 1;
+				slope = this.derivative() || 1;
 			}
-			const correction = LEARN_RATE * (perInputError / slope);
+			const correction = LEARN_RATE * perInputError / slope;
 			const newWeight = this.weights[i] + correction;
-			if (isNaN(newWeight)) {
+			if (isNaN(newWeight) || false) {
 				console.log({
 					input: this.inputs[i],
+					z: this.z,
+					bias: this.bias,
 					perInputError,
 					derivative: this.derivative(),
 					dF: this.dF.toString(),
