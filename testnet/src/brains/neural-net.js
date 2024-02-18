@@ -1,8 +1,5 @@
 import { dF } from '../util.js';
 
-// const BIAS = ();
-const LEARN_RATE = 0.01;
-
 const sum = values => {
 	let rv = 0;
 	for (const v of values) rv += v;
@@ -21,14 +18,16 @@ class Neuron {
 	bias = 0;
 	activation = x => x;
 	dF = x => 1;
+	rate = 0.01;
 
-	constructor({inputs, activation, derivative}) {
+	constructor({inputs, activation, derivative, rate}) {
 		for (let i = 0; i < inputs.length; i++) {
 			this.weights[i] = Math.random() * 2 - 1;
 		}
 		if (activation) this.activation = activation;
 		this.dF = derivative || dF(activation);
 		this.bias = Math.random() * 2 - 1;
+		this.rate = rate || 0.01;
 	}
 
 	toJSON() {
@@ -61,7 +60,8 @@ class Neuron {
 			(v, i) => error * this.derivative() * this.weights[i]
 		);
 
-		const biasCorrection = LEARN_RATE * perInputError / this.derivative();
+		// const biasCorrection = this.rate * perInputError / this.derivative();
+		const biasCorrection = this.rate * perInputError * this.derivative();
 		const newBias = bound(this.bias + biasCorrection, -1, 1);
 
 		if (isNaN(newBias)) {
@@ -85,8 +85,9 @@ class Neuron {
 		for (let i = 0; i < this.weights.length; i++) {
 			let slope = this.derivative() * this.inputs[i];
 			if (slope === 0) continue;
-			// const correction = LEARN_RATE * inputErrors[i] / slope;
-			const correction = LEARN_RATE * perInputError / slope;
+			// const correction = this.rate * inputErrors[i] / slope;
+			// const correction = this.rate * perInputError / slope;
+			const correction = this.rate * error * slope;
 			const newWeight = bound(this.weights[i] + correction, -1, 1);
 			if (isNaN(newWeight) || false) {
 				console.log({
@@ -115,7 +116,9 @@ export class Brain {
 
 	constructor({
 		shape = [8, 8, 8],
-		activation = x => 1/(1 + (Math.pow(Math.E, -x)))
+		activation = x => 1/(1 + (Math.pow(Math.E, -x))),
+		derivative,
+		rate = 0.1
 	}) {
 		this.inputs = shape[0];
 		for (let layer_i = 1; layer_i < shape.length; layer_i++) {
@@ -124,7 +127,9 @@ export class Brain {
 			for (let output_i = 0; output_i < neurons; output_i++) {
 				layer.push(new Neuron({
 					inputs: this.layers[this.layers.length - 1] || Array(shape[0]),
-					activation
+					activation,
+					derivative,
+					rate
 				}));
 			}
 			this.layers.push(layer);
