@@ -1,6 +1,6 @@
 import { dF } from '../util.js';
 
-const BIAS = 0;
+// const BIAS = ();
 const LEARN_RATE = 0.01;
 
 const sum = values => {
@@ -18,17 +18,17 @@ class Neuron {
 	inputs = [];
 	z = 0;
 	output = 0;
-	bias = BIAS;
+	bias = 0;
 	activation = x => x;
 	dF = x => 1;
 
 	constructor({inputs, activation, derivative}) {
 		for (let i = 0; i < inputs.length; i++) {
-			this.weights[i] = Math.random() - 0.5;
-			// this.weights[i] = 0.5;
+			this.weights[i] = Math.random() * 2 - 1;
 		}
 		if (activation) this.activation = activation;
 		this.dF = derivative || dF(activation);
+		this.bias = Math.random() * 2 - 1;
 	}
 
 	toJSON() {
@@ -56,11 +56,14 @@ class Neuron {
 
 	learn(error) {
 		// console.log('neuron correcting for error', error);
-		const inputErrors = [];
 		const perInputError = error / (this.inputs.length + 1);
+		const inputErrors = this.inputs.map(
+			(v, i) => error * this.derivative() * this.weights[i]
+		);
 
 		const biasCorrection = LEARN_RATE * perInputError / this.derivative();
 		const newBias = bound(this.bias + biasCorrection, -1, 1);
+
 		if (isNaN(newBias)) {
 			console.log({
 				inputs: this.inputs,
@@ -68,7 +71,7 @@ class Neuron {
 				z: this.z,
 				output: this.output,
 				error,
-				perInputError,
+				inputErrors,
 				bias: this.bias,
 				newBias,
 				derivative: this.derivative(),
@@ -80,9 +83,9 @@ class Neuron {
 		this.bias = newBias;
 
 		for (let i = 0; i < this.weights.length; i++) {
-			inputErrors[i] = perInputError;
 			let slope = this.derivative() * this.inputs[i];
 			if (slope === 0) continue;
+			// const correction = LEARN_RATE * inputErrors[i] / slope;
 			const correction = LEARN_RATE * perInputError / slope;
 			const newWeight = bound(this.weights[i] + correction, -1, 1);
 			if (isNaN(newWeight) || false) {
@@ -90,7 +93,6 @@ class Neuron {
 					input: this.inputs[i],
 					z: this.z,
 					bias: this.bias,
-					perInputError,
 					derivative: this.derivative(),
 					dF: this.dF.toString(),
 					slope,

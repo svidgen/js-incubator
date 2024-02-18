@@ -5,7 +5,11 @@ export const BITS = 8;
 export const TRAINING_LOOPS = 5;
 
 export const brain = new Brain({
+	// sigmoid works with no hidden layer
 	shape: [8, 2],
+	
+	// hidden layer works with linear activation
+	// shape: [8, 16, 2],
 	// activation: x => x
 });
 
