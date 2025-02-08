@@ -23,6 +23,7 @@ class App {
 			process.stdout.write(`epoch ${epoch} of ${TRAINING_LOOPS}`);
 			for (const [i, {input, expected}] of TRAINING_DATA.entries()) {
 				if (i % 123 === 0) {
+					// await new Promise(unsleep => setTimeout(unsleep, 100));
 					const pct = formatPercent(i/TRAINING_DATA.length);
 					process.stdout.write(
 						`\repoch ${epoch} of ${TRAINING_LOOPS} ${pct}`
