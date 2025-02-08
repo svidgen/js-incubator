@@ -9,22 +9,40 @@ function formatPercent(decimal, bar = 25, digits = 6) {
 	return `[${fill}] ${pct.substring(pct.length - digits)}`;
 }
 
+// because training data could be a generator
+function * entries(data) {
+	let i = 0;
+	for (const item of data) {
+		yield [i, item];
+		i++;
+	}
+}
+
 class App {
 	async run(name = 'evens', brainOverride = undefined) {
 		const {
 			brain,
 			TRAINING_LOOPS,
 			TRAINING_DATA,
+			TRAINING_DATA_COUNT,
 			TEST_CASES,
 			TEST,
 		} = await import(`./examples/${name}.js`);
 
+		const updateInterval = 100; // in ms
+		let lastUpdate;
+
 		for (let epoch = 0; epoch < TRAINING_LOOPS; epoch++) {
+			const trainingData = typeof TRAINING_DATA === 'function'
+				? TRAINING_DATA(TRAINING_DATA_COUNT)
+				: TRAINING_DATA;
+
 			process.stdout.write(`epoch ${epoch} of ${TRAINING_LOOPS}`);
-			for (const [i, {input, expected}] of TRAINING_DATA.entries()) {
-				if (i % 123 === 0) {
-					// await new Promise(unsleep => setTimeout(unsleep, 100));
-					const pct = formatPercent(i/TRAINING_DATA.length);
+			for (const [i, {input, expected}] of entries(trainingData)) {
+				const now = new Date().getTime()
+				if (!lastUpdate || now - lastUpdate > updateInterval) {
+					lastUpdate = now;
+					const pct = formatPercent(i/TRAINING_DATA_COUNT);
 					process.stdout.write(
 						`\repoch ${epoch} of ${TRAINING_LOOPS} ${pct}`
 					);
@@ -32,15 +50,22 @@ class App {
 				brain.learn({input, expected});
 			}
 			const pct = formatPercent(1);
-			process.stdout.write(`\repoch ${epoch} of ${TRAINING_LOOPS} ${pct}`);
+			process.stdout.write(`\repoch ${epoch + 1} of ${TRAINING_LOOPS} ${pct}`);
 			console.log();
 		}
 		console.log();
-		console.log(JSON.stringify({brain}, null, 2));
+
+		if (typeof TEST.summarize === 'function') {
+			console.log(TEST.summarize(brain));
+		}
+
+		const testCases = typeof TEST_CASES === 'function'
+			? TEST_CASES(TRAINING_DATA_COUNT)
+			: TEST_CASES;
 
 		let matches = 0;
 		let count = 0;
-		for (const {input, expected} of TEST_CASES) {
+		for (const {input, expected} of testCases) {
 			process.stdout.write(`\rchecking test case ${count}`);
 			const output = brain.think(input);
 			if (TEST.matches(output, expected)) {

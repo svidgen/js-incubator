@@ -1,34 +1,62 @@
-import { asIntArray } from '../util.js';
+import fs, {read} from 'fs';
+import JSZip from 'jszip';
 import { Brain } from '../brains/neural-net.js';
 
-const trainingText = `
-It isn't easy when a dot-com as reputable and beloved as the one and only pointless dot-com falls short of its dedicated patrons' expecations. And indeed, we have fallen short. As you can plainly see, our last public update was a whopping eight months ago when we promised semi-fungible red dot tokens. "And where are they?" you ask.
+const FILENAME = './data/wiki-qa-corpus.zip';
+const URL = "https://download.microsoft.com/download/E/5/F/E5FCFCEE-7005-4814-853D-DAA7C66507E0/WikiQACorpus.zip";
 
-And boy, are you ever right to ask. But boy, do we ever have some answer.
+async function download(url, filename) {
+	await fs.promises.mkdir('./data', { recursive: true });
+	const result = await fetch(url);
+	const data = await result.arrayBuffer();
+	await fs.promises.writeFile(filename, Buffer.from(data), { encoding: 'binary' });
+}
 
-You see, it all started six months ago. We had millions of these virtual red dots just laying around, awaiting token fungitization. And we said, "Hey, let's fungitize these dots." But see, that's where things got hairy — really, literally hairy.
+async function readZip(filedata) {
+	const files = new Map();
+	const zip = new JSZip();
+	const contents = await zip.loadAsync(filedata);
+	for (const [filename, data] of Object.entries(contents.files)) {
+		if (data.dir) continue;
+		files.set(filename, await data.async('string'));
+	}
+	return files;
+}
 
-For reasons unbeknownst to me, the dots started sprouting beard hairs. You can't even make this stuff up. They grew giant beards, formed a biker gang, and literally rode off. Red dots, which you normally expect to be doing literally nothing (at least around here), grew beards, and rode into the freaking sunset.
+async function getData(tries = 1) {
+	if (tries === 0) {
+		console.log("Out of retries.");
+		exit(1);
+	}
 
-It was majestic. It was a little scary. And in the end, it's actually pretty infuriating. We had big plans for these dots, their tokenization, their fungitization, etc.. They were going to be famous. And now where are they?
+	let data;
 
-Freaking sunset. On motorcycles. Beards and everything.
+	try {
+		data = await fs.promises.readFile(FILENAME, { encoding: 'binary' });
+		console.log("File exists. Reading ...");
+	} catch {
+		console.log("Data file doesn't exist. Downloading ... ");
+		await download(URL, FILENAME);
+		return getData(tries - 1);
+	}
 
-So, that's what we're up against here. Sure, there are still some dots around. But, not as many — what with all the dots in the sunset now with their beards. But, rest assured, we haven't forgotten about our promise. If push comes to shove, we'll see about coaxing them back with some sweet new rides or something. Or perhaps beard trimmers.
+	console.log("Reading zip ...");
+	const files = await readZip(data);
+	console.log("Zip loaded.", files.keys());
+	return files.get("WikiQACorpus/WikiQA-train.txt");
+}
 
-In the meantime, sit tight. We'll get those fungible red dot tokens. We're just dealing with quite a lot of unexpected drama at the moment.
+const trainingText = await getData();
 
-Thanks for your patience.
-`;
-
-// const shortTraining = 'this is a short text. the text is short. it is not long. but instead short.';
-// const tokens = tokenize(shortTraining);
-
+console.log('tokenizing');
 const tokens = tokenize(trainingText);
+console.log('Tokens extracted: ', tokens.length);
 
+console.log('Creating dictionary');
 const dictionary = Object.fromEntries(
 	[...new Set(tokens)].map((token, idx) => [token, idx])
 );
+console.log('Dictionary created. Token count: ', dictionary.length);
 
 function tokenize(text) {
 	return text.toLowerCase()
@@ -38,29 +66,34 @@ function tokenize(text) {
 
 function tokenBits(token) {
 	const bits = new Array(BITS).fill(0);
-	bits[dictionary[token]] = 1;
+	if (token && dictionary[token]) bits[dictionary[token]] = 1;
 	return bits;
 }
 
 export const BITS = Object.keys(dictionary).length;
 
 // training will predict the middle word.
-export const TRAINING_DATA = tokens
-	.slice(1, tokens.length - 2)
-	.map((_, idx) => {
-		return {
+export const TRAINING_DATA = function * (count) {
+	for (let i = 0; i < count ?? tokens.length; i++) {
+		let idx = count ? Math.floor(Math.random() * tokens.length) : i;
+		yield {
 			input: [
 				...tokenBits(tokens[idx - 1]),
 				...tokenBits(tokens[idx + 1])
 			],
-			expected: tokenBits(tokens[idx]),
+			expected: [
+				...tokenBits(tokens[idx]),
+			]
 		};
-	});
+	}
+}
 
+export const TRAINING_DATA_COUNT = 100;
 export const TEST_CASES = TRAINING_DATA;
 
-export const TRAINING_LOOPS = 20;
+export const TRAINING_LOOPS = 10;
 
+console.log('Creating brain ... ');
 export const brain = new Brain({
 	// sigmoid works with no hidden layer
 	shape: [
@@ -69,7 +102,7 @@ export const brain = new Brain({
 
 		// knowledge layer. the number of dimensions we want to assign
 		// to each token.
-		16,
+		5,
 
 		// number of letters we're trying to predict
 		BITS
@@ -85,6 +118,7 @@ export const brain = new Brain({
 	activation: x => x > 0.5 ? 1 : 0,
 	derivative: _x => 1
 });
+console.log('Brain created');
 
 export const TEST = {
 	matches: (rawOutput, rawExpected) => {
