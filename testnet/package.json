@@ -12,6 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "jszip": "^3.10.1"
+    "gl": "8.1.6",
+    "jszip": "^3.10.1",
+    "gpu.js": "^2.16.0"
+  },
+  "overrides": {
+    "gl": "8.1.6"
   }
 }

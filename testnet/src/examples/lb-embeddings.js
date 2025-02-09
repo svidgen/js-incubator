@@ -23,7 +23,7 @@ async function readZip(filedata) {
 	return files;
 }
 
-async function getData(tries = 1) {
+async function getData(tries = 3) {
 	if (tries === 0) {
 		console.log("Out of retries.");
 		exit(1);
@@ -78,8 +78,10 @@ export const TRAINING_DATA = function * (count) {
 		let idx = count ? Math.floor(Math.random() * tokens.length) : i;
 		yield {
 			input: [
+				...tokenBits(tokens[idx - 2]),
 				...tokenBits(tokens[idx - 1]),
-				...tokenBits(tokens[idx + 1])
+				...tokenBits(tokens[idx + 1]),
+				...tokenBits(tokens[idx + 2]),
 			],
 			expected: [
 				...tokenBits(tokens[idx]),
@@ -88,21 +90,23 @@ export const TRAINING_DATA = function * (count) {
 	}
 }
 
-export const TRAINING_DATA_COUNT = 100;
+export const TRAINING_DATA_COUNT = dictionary.length;
 export const TEST_CASES = TRAINING_DATA;
 
-export const TRAINING_LOOPS = 10;
+export const TRAINING_LOOPS = 5;
 
-console.log('Creating brain ... ');
+const DIMENSIONS = Math.floor((Math.log(dictionary.length) / Math.log(2)) / 2) + 1;
+
+console.log(`Creating brain with ${DIMENSIONS} dimensions.`);
 export const brain = new Brain({
 	// sigmoid works with no hidden layer
 	shape: [
 		// number of bits for input 'image'
-		BITS * 2,
+		BITS * 4,
 
 		// knowledge layer. the number of dimensions we want to assign
 		// to each token.
-		5,
+		DIMENSIONS,
 
 		// number of letters we're trying to predict
 		BITS

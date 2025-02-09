@@ -37,14 +37,18 @@ class App {
 				? TRAINING_DATA(TRAINING_DATA_COUNT)
 				: TRAINING_DATA;
 
-			process.stdout.write(`epoch ${epoch} of ${TRAINING_LOOPS}`);
+			const dataLength = typeof TRAINING_DATA === 'function'
+				? TRAINING_DATA_COUNT
+				: TRAINING_DATA.length;
+
+			process.stdout.write(`epoch ${epoch + 1} of ${TRAINING_LOOPS}`);
 			for (const [i, {input, expected}] of entries(trainingData)) {
 				const now = new Date().getTime()
 				if (!lastUpdate || now - lastUpdate > updateInterval) {
 					lastUpdate = now;
-					const pct = formatPercent(i/TRAINING_DATA_COUNT);
+					const pct = formatPercent(i/dataLength);
 					process.stdout.write(
-						`\repoch ${epoch} of ${TRAINING_LOOPS} ${pct}`
+						`\repoch ${epoch + 1} of ${TRAINING_LOOPS} ${pct}`
 					);
 				}
 				brain.learn({input, expected});
