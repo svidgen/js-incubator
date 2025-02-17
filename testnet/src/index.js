@@ -59,10 +59,6 @@ class App {
 		}
 		console.log();
 
-		if (typeof TEST.summarize === 'function') {
-			console.log(TEST.summarize(brain));
-		}
-
 		const testCases = typeof TEST_CASES === 'function'
 			? TEST_CASES(TRAINING_DATA_COUNT)
 			: TEST_CASES;
@@ -77,6 +73,12 @@ class App {
 			}
 			count++;
 		}
+
+		console.log();
+		if (typeof TEST.summarize === 'function') {
+			console.log(TEST.summarize(brain));
+		}
+
 		console.log();
 		console.log('success rate', matches / count);
 	}

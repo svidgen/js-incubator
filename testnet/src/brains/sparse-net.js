@@ -1,3 +1,4 @@
+import process, { exitCode } from 'process';
 import { dF } from '../util.js';
 
 const sum = values => {
@@ -14,8 +15,12 @@ class Input {
 	 */
 	positions = [];
 	rate = 0.01;
+	activation;
+	dF;
 
-	constructor({ positions, dimensions, rate }) {
+	constructor({ activation, derivative, positions, dimensions, rate }) {
+		this.activation = activation;
+		this.dF = derivative || dF(activation);
 		this.positions = Array(positions);
 		for (let p = 0; p < positions; p++) {
 			this.positions[p] = Array(dimensions);
@@ -30,6 +35,10 @@ class Input {
 		return {
 			positions: this.positions,
 		};
+	}
+
+	think(position) {
+		return this.activation(this.positions[position])
 	}
 
 	/**
@@ -86,7 +95,7 @@ class Output {
 	}
 
 	learn(error) {
-		const perInputError = error / (this.inputs.length + 1);
+		const perInputError = error / (this.inputs.size + 1);
 
 		const inputErrors = this.inputs.map(
 			(_, i) => error * this.derivative() * this.dimensions[i]
@@ -119,11 +128,18 @@ export class Brain {
 	 */
 	outputs = new Map();
 
+	/**
+	 * @type {string[]}
+	 */
+	outputQueue = [];
+
 	activation;
 	derivation;
 	rate;
 	dimensions;
 	positions;
+	lastNegativeSample = -1;
+	dF = x => 1;
 
 	constructor({
 		activation = x => 1/(1 + (Math.pow(Math.E, -x))),
@@ -133,10 +149,32 @@ export class Brain {
 		positions = 4,
 	}) {
 		this.activation = activation;
-		this.dervative = derivative;
 		this.rate = rate;
 		this.dimensions = dimensions;
 		this.positions = positions;
+		this.dF = derivative || dF(activation);
+	}
+
+	/**
+	 * 
+	 * @param {Output} exluding 
+	 */
+	negativeSample(excluding) {
+		/**
+		 * @type {Output[]}
+		 */
+		const samples = [];
+		const sampleSize = Math.floor(Math.log(this.outputQueue.length) + 1);
+		for (let i = 0; i < sampleSize; i++) {
+			this.lastNegativeSample = (this.lastNegativeSample + 1) % this.outputQueue.length;
+			const sampleKey = this.outputQueue[this.lastNegativeSample];
+			const sample = this.outputs.get(sampleKey);
+			if (sample && sample !== excluding) {
+				samples.push(sample);
+			}
+		}
+		
+		return samples;
 	}
 
 	/**
@@ -161,15 +199,17 @@ export class Brain {
 	 * @returns {Output}
 	 */
 	getOutput(key) {
+		// console.log('getting output', key);
 		let output = this.outputs.get(key);
 		if (!output) {
 			output = new Output({
 				activation: this.activation,
-				derivative: this.dervative,
+				derivative: this.dF,
 				dimensions: this.dimensions,
 				rate: this.rate,
 			});
 			this.outputs.set(key, output);
+			this.outputQueue.push(key);
 		}
 		return output;
 	}
@@ -182,13 +222,15 @@ export class Brain {
 	 */
 	learn(association) {
 		const inputs = association.input.map(t => this.getInput(t));
-		const expected = this.getOutput(association.expected);
+		const expected = this.getOutput(association.expected.pop());
 
 		let dimensions = Array(this.dimensions).fill(0);
-		for (const [p, input] of inputs.entries()) {
-			for (let d = 0; d < this.dimensions; d++) {
+
+		for (let d = 0; d < this.dimensions; d++) {
+			for (const [p, input] of inputs.entries()) {
 				dimensions[d] += input.positions[p][d];
 			}
+			dimensions[d] = this.activation(dimensions[d]);
 		}
 
 		const output = expected.think(dimensions);
@@ -196,6 +238,19 @@ export class Brain {
 		// expected/desired output is always 1 (100%). so, base error is simply
 		// 1 minus the current output.
 		const errors = expected.learn(1 - output);
+
+		// console.log({ output, errors, dimensions });
+
+		// we also take a negative sample of neurons to learn 0% for these dimensions
+		// and to backpropagate. if we don't do this, every input will simply
+		// predict every output eventually.
+		for (const negative of this.negativeSample(expected)) {
+			const nerrors = negative.learn(0 - negative.think(dimensions));
+			for (const [i, nerror] of nerrors.entries()) {
+				errors[i] = errors[i] + nerror;
+			}
+			// console.log({ nerrors });
+		}
 
 		// there is only one "layer" -- the virtual layer of dimensions.
 		// and, we've baked learning into the inputs.
@@ -219,6 +274,7 @@ export class Brain {
 				dimensions[d] += input.positions[p][d];
 			}
 		}
+		dimensions = dimensions.map(d => this.activation(d));
 
 		/**
 		 * @type {({ token: string | symbol, confidence: number })[]}
@@ -227,19 +283,23 @@ export class Brain {
 
 		for (const [token, candidate] of this.outputs.entries()) {
 			const output = candidate.think(dimensions);
-			if (output > 0.5) {
+			// if (output > 0.5) {
 				results.push({
 					confidence: output,
 					token
 				});
-			}
+			// }
 		}
 
 		results.sort((a, b) => {
 			return a.confidence - b.confidence;
 		}).reverse();
 
-		return results.slice(0, 10);
+		const topN = results.slice(0, 5);
+
+		console.log(JSON.stringify({ dimensions, inputTokens, topN }, null, 2))
+
+		return topN;
 	}
 
 	toJSON() {

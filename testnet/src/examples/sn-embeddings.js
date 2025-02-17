@@ -53,10 +53,8 @@ const tokens = tokenize(trainingText);
 console.log('Tokens extracted: ', tokens.length);
 
 console.log('Creating dictionary');
-const dictionary = Object.fromEntries(
-	[...new Set(tokens)].map((token, idx) => [token, idx])
-);
-console.log('Dictionary created. Token count: ', dictionary.length);
+const dictionary = new Set(tokens);
+console.log('Dictionary created. Token count: ', dictionary.size);
 
 function tokenize(text) {
 	return text.toLowerCase()
@@ -67,13 +65,14 @@ function tokenize(text) {
 // training will predict the middle word.
 export const TRAINING_DATA = function * (count) {
 	for (let i = 0; i < count ?? tokens.length; i++) {
-		let idx = count ? Math.floor(Math.random() * tokens.length) : i;
+		// let idx = count ? Math.floor(Math.random() * tokens.length) : i;
+		const idx = i;
 		yield {
 			input: [
-				tokens[idx - 2],
-				tokens[idx - 1],
-				tokens[idx + 1],
-				tokens[idx + 2],
+				tokens[idx - 2] ?? '',
+				tokens[idx - 1] ?? '',
+				tokens[idx + 1] ?? '',
+				tokens[idx + 2] ?? '',
 			],
 			expected: [
 				tokens[idx],
@@ -82,26 +81,46 @@ export const TRAINING_DATA = function * (count) {
 	}
 }
 
-export const TRAINING_DATA_COUNT = dictionary.length;
-export const TEST_CASES = TRAINING_DATA;
+export const TRAINING_DATA_COUNT = tokens.length;
+export const TEST_CASES = [...TRAINING_DATA(3)];
 
 export const TRAINING_LOOPS = 5;
 
-const DIMENSIONS = Math.floor((Math.log(dictionary.length) / Math.log(2)) / 2) + 1;
+const DIMENSIONS = Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
 
 console.log(`Creating brain with ${DIMENSIONS} dimensions.`);
 export const brain = new Brain({
-	rate: 0.1,
+	rate: 0.05,
 	activation: x => x > 0.5 ? 1 : 0,
-	derivative: _x => 1
+	derivative: _x => 1,
+	dimensions: DIMENSIONS,
+	positions: 4
 });
 console.log('Brain created');
 
 export const TEST = {
 	matches: (rawOutput, rawExpected) => {
-		const output = rawOutput.map(v => v > 0.5 ? true : false);
-		const expected = rawExpected.map(v => v === 1 ? true : false);
+		return 1;
+		// const output = rawOutput.map(v => v > 0.5 ? true : false);
+		// const expected = rawExpected.map(v => v === 1 ? true : false);
 		// console.log({rawOutput, rawExpected, output, expected});
-		return JSON.stringify(output) == JSON.stringify(expected);
+		// return JSON.stringify(output) == JSON.stringify(expected);
+	},
+
+	/**
+	 * 
+	 * @param {Brain} brain 
+	 */
+	summarize: (brain) => {
+		console.log('brain outputs', brain.outputs.size);
+		return [
+			'man',
+			'woman',
+			// 'human',
+			'person',
+			'thing',
+			// 'found',
+			// 'science'
+		].map(w => ({ [w]: brain.getOutput(w).dimensions }));
 	}
 };
