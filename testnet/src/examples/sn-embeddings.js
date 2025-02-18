@@ -1,6 +1,15 @@
 import fs from 'fs';
+import process from 'process';
 import JSZip from 'jszip';
 import { Brain } from '../brains/sparse-net.js';
+import { workerData } from 'worker_threads';
+
+const [
+	_nodepath,
+	_binjspath,
+	_embeddingsExamplePath,
+	OUTPUT_PATH
+] = process.argv;
 
 const FILENAME = './data/wiki-qa-corpus.zip';
 const URL = "https://download.microsoft.com/download/E/5/F/E5FCFCEE-7005-4814-853D-DAA7C66507E0/WikiQACorpus.zip";
@@ -82,17 +91,21 @@ export const TRAINING_DATA = function * (count) {
 }
 
 export const TRAINING_DATA_COUNT = tokens.length;
-export const TEST_CASES = [[...TRAINING_DATA(3)].pop()];
+export const TEST_CASES = [...TRAINING_DATA(100)];
 
 export const TRAINING_LOOPS = 5;
 
 const DIMENSIONS = 10; // Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
 
 console.log(`Creating brain with ${DIMENSIONS} dimensions.`);
+
+const sigmoid = x => 1 / (1 + Math.exp(-x));
+const sigmoidDF = x => sigmoid(x) * (1 - sigmoid(x));
+
 export const brain = new Brain({
-	rate: 0.25,
-	activation: x => Math.max(Math.min(x, 1), -1),
-	derivative: _x => 1,
+	rate: 0.025,
+	activation: sigmoid,
+	derivative: sigmoidDF,
 	dimensions: DIMENSIONS,
 	positions: 4
 });
@@ -114,12 +127,17 @@ export const TEST = {
 	 * @param {Brain} brain 
 	 */
 	summarize: (brain) => {
-		console.log('brain outputs', brain.outputs.size);
-		return [
-			'man',
-			'woman',
-			'person',
-			'glacier',
-		].map(w => ({ [w]: brain.getOutput(w).dimensions }));
+		if (OUTPUT_PATH) {
+			const embeddings = Object.fromEntries(
+				brain.outputs.entries().map(([word, output]) => [
+					word, output.dimensions
+				])
+			);
+
+			fs.writeFileSync(
+				OUTPUT_PATH,
+				JSON.stringify(embeddings, null, 2)
+			);
+		}
 	}
 };

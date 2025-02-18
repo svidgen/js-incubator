@@ -14,7 +14,7 @@ class Input {
 	 * @type {number[][]}
 	 */
 	dimensions = [];
-	rate = 0.01;
+	rate = 0.05;
 	activation;
 	dF;
 
@@ -25,7 +25,7 @@ class Input {
 		for (let i = 0; i < dimensions; i++) {
 			this.dimensions[i] = Math.random() * 2 - 1;
 		}
-		this.rate = rate || 0.01;
+		this.rate = rate || 0.05;
 	}
 
 	toJSON() {
@@ -39,8 +39,8 @@ class Input {
 	 */
 	learn(error) {
 		for (let i = 0; i < error.length; i++) {
-			const correction = this.rate * error[i] * this.dF(this.dimensions[i]);
-			const newValue = this.dimensions[i] + correction; // bound(this.dimensions[i] + correction, -1, 1);
+			const correction = this.rate * error[i] * this.dF(1);
+			const newValue = bound(this.dimensions[i] + correction, -1, 1);
 			this.dimensions[i] = newValue;
 		}
 	}
@@ -49,10 +49,9 @@ class Input {
 class Output {
 	dimensions = [];
 	output = 0;
-	bias = 0;
 	activation = x => x;
 	dF = x => 1;
-	rate = 0.01;
+	rate = 0.05;
 
 	constructor({ dimensions, activation, derivative, rate }) {
 		this.dimensions = Array(dimensions);
@@ -61,7 +60,7 @@ class Output {
 		}
 		if (activation) this.activation = activation;
 		this.dF = derivative || dF(activation);
-		this.rate = rate || 0.01;
+		this.rate = rate || 0.05;
 	}
 
 	toJSON() {
@@ -77,7 +76,7 @@ class Output {
 
 	think(inputs) {
 		this.inputs = inputs;
-		this.z = sum(this.weighted()) + this.bias;
+		this.z = sum(this.weighted());
 		this.output = this.activation(this.z);
 		return this.output;
 	}
@@ -87,20 +86,12 @@ class Output {
 	}
 
 	learn(error) {
-		const perInputError = error / (this.inputs.length + 1);
-
 		const inputErrors = this.inputs.map(
 			(_, i) => error * this.derivative() * this.dimensions[i]
 		);
 
-		const biasCorrection = this.rate * perInputError * this.derivative();
-		const newBias = bound(this.bias + biasCorrection, -1, 1);
-		this.bias = newBias;
-
 		for (let i = 0; i < this.dimensions.length; i++) {
-			let slope = this.derivative() * this.inputs[i];
-			if (slope === 0) continue;
-			const correction = this.rate * error * slope;
+			const correction = this.rate * error * this.derivative() * this.inputs[i];
 			const newDim = bound(this.dimensions[i] + correction, -1, 1);
 			this.dimensions[i] = newDim;
 		}
@@ -238,7 +229,7 @@ export class Brain {
 		
 		for (const negative of negativeSample) {
 			const negativeOutput = negative.think(dimensions);
-			const nerrors = negative.learn((0 - negativeOutput));
+			const nerrors = negative.learn(0 - negativeOutput);
 			for (const [i, nerror] of nerrors.entries()) {
 				errors[i] = errors[i] + nerror;
 			}
@@ -274,7 +265,7 @@ export class Brain {
 				dimensions[d] += input.dimensions[d];
 			}
 		}
-		console.log('pre activate dims', dimensions);
+		// console.log('pre activate dims', dimensions);
 		dimensions = dimensions.map(d => this.activation(d));
 
 		/**
@@ -296,11 +287,11 @@ export class Brain {
 			return a.confidence - b.confidence;
 		}).reverse();
 
-		const topN = results.slice(0, 20);
+		const topN = results.slice(0, 100);
 
-		const glacier = results.filter(r => r.token === 'glacier');
+		// const glacier = results.filter(r => r.token === 'glacier');
 
-		console.log(JSON.stringify({ dimensions, inputTokens, topN, glacier }, null, 2))
+		// console.log(JSON.stringify({ dimensions, inputTokens, topN, glacier }, null, 2))
 
 		return topN;
 	}
