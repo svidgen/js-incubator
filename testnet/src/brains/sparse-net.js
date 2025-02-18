@@ -13,39 +13,35 @@ class Input {
 	/**
 	 * @type {number[][]}
 	 */
-	positions = [];
+	dimensions = [];
 	rate = 0.01;
 	activation;
 	dF;
 
-	constructor({ activation, derivative, positions, dimensions, rate }) {
+	constructor({ activation, derivative, dimensions, rate }) {
 		this.activation = activation;
 		this.dF = derivative || dF(activation);
-		this.positions = Array(positions);
-		for (let p = 0; p < positions; p++) {
-			this.positions[p] = Array(dimensions);
-			for (let d = 0; d < dimensions; d++) {
-				this.positions[p][d] = Math.random() * 2 - 1;
-			}
+		this.dimensions = Array(dimensions);
+		for (let i = 0; i < dimensions; i++) {
+			this.dimensions[i] = Math.random() * 2 - 1;
 		}
 		this.rate = rate || 0.01;
 	}
 
 	toJSON() {
 		return {
-			positions: this.positions,
+			dimensions: this.dimensions,
 		};
 	}
 
 	/**
-	 * @param {number} position 
 	 * @param {number[]} error
 	 */
-	learn(position, error) {
+	learn(error) {
 		for (let i = 0; i < error.length; i++) {
-			const correction = this.rate * error[i] * this.dF(this.positions[position][i]);
-			const newValue = bound(this.positions[position][i] + correction, -1, 1);
-			this.positions[position][i] = newValue;
+			const correction = this.rate * error[i] * this.dF(this.dimensions[i]);
+			const newValue = this.dimensions[i] + correction; // bound(this.dimensions[i] + correction, -1, 1);
+			this.dimensions[i] = newValue;
 		}
 	}
 }
@@ -133,7 +129,6 @@ export class Brain {
 	derivation;
 	rate;
 	dimensions;
-	positions;
 	lastNegativeSample = -1;
 	dF = x => 1;
 
@@ -142,12 +137,10 @@ export class Brain {
 		derivative,
 		rate = 0.1,
 		dimensions = 5,
-		positions = 4,
 	}) {
 		this.activation = activation;
 		this.rate = rate;
 		this.dimensions = dimensions;
-		this.positions = positions;
 		this.dF = derivative || dF(activation);
 	}
 
@@ -184,7 +177,6 @@ export class Brain {
 				activation: this.activation,
 				derivative: this.derivation,
 				dimensions: this.dimensions,
-				positions: this.positions,
 				rate: this.rate,
 			});
 			this.inputs.set(key, input);
@@ -225,8 +217,8 @@ export class Brain {
 
 		let dimensions = Array(this.dimensions).fill(0);
 		for (let d = 0; d < this.dimensions; d++) {
-			for (const [p, input] of inputs.entries()) {
-				dimensions[d] += input.positions[p][d];
+			for (const input of inputs) {
+				dimensions[d] += input.dimensions[d];
 			}
 			dimensions[d] = this.activation(dimensions[d]);
 		}
@@ -277,9 +269,9 @@ export class Brain {
 		const inputs = inputTokens.map(t => this.getInput(t));
 
 		let dimensions = Array(this.dimensions).fill(0);
-		for (const [p, input] of inputs.entries()) {
+		for (const input of inputs) {
 			for (let d = 0; d < this.dimensions; d++) {
-				dimensions[d] += input.positions[p][d];
+				dimensions[d] += input.dimensions[d];
 			}
 		}
 		dimensions = dimensions.map(d => this.activation(d));
