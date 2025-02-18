@@ -1,4 +1,4 @@
-import process, { exitCode } from 'process';
+import process from 'process';
 import { dF } from '../util.js';
 
 const sum = values => {
@@ -37,17 +37,13 @@ class Input {
 		};
 	}
 
-	think(position) {
-		return this.activation(this.positions[position])
-	}
-
 	/**
 	 * @param {number} position 
 	 * @param {number[]} error
 	 */
 	learn(position, error) {
 		for (let i = 0; i < error.length; i++) {
-			const correction = this.rate * error[i];
+			const correction = this.rate * error[i] * this.dF(this.positions[position][i]);
 			const newValue = bound(this.positions[position][i] + correction, -1, 1);
 			this.positions[position][i] = newValue;
 		}
@@ -95,7 +91,7 @@ class Output {
 	}
 
 	learn(error) {
-		const perInputError = error / (this.inputs.size + 1);
+		const perInputError = error / (this.inputs.length + 1);
 
 		const inputErrors = this.inputs.map(
 			(_, i) => error * this.derivative() * this.dimensions[i]
@@ -185,6 +181,8 @@ export class Brain {
 		let input = this.inputs.get(key);
 		if (!input) {
 			input = new Input({
+				activation: this.activation,
+				derivative: this.derivation,
 				dimensions: this.dimensions,
 				positions: this.positions,
 				rate: this.rate,
@@ -222,10 +220,10 @@ export class Brain {
 	 */
 	learn(association) {
 		const inputs = association.input.map(t => this.getInput(t));
-		const expected = this.getOutput(association.expected.pop());
+		const expected = this.getOutput(association.expected[0]);
+		const negativeSample = this.negativeSample(expected);
 
 		let dimensions = Array(this.dimensions).fill(0);
-
 		for (let d = 0; d < this.dimensions; d++) {
 			for (const [p, input] of inputs.entries()) {
 				dimensions[d] += input.positions[p][d];
@@ -239,24 +237,34 @@ export class Brain {
 		// 1 minus the current output.
 		const errors = expected.learn(1 - output);
 
-		// console.log({ output, errors, dimensions });
+		// console.log('\n\n\n############')
+		// console.dir({ inputs, expected, output, dimensions, errors }, { depth: null });
 
 		// we also take a negative sample of neurons to learn 0% for these dimensions
 		// and to backpropagate. if we don't do this, every input will simply
 		// predict every output eventually.
-		for (const negative of this.negativeSample(expected)) {
-			const nerrors = negative.learn(0 - negative.think(dimensions));
+		
+		for (const negative of negativeSample) {
+			const negativeOutput = negative.think(dimensions);
+			const nerrors = negative.learn((0 - negativeOutput));
 			for (const [i, nerror] of nerrors.entries()) {
 				errors[i] = errors[i] + nerror;
 			}
-			// console.log({ nerrors });
+			// console.dir({ negative, negativeOutput, nerrors }, { depth: null });
 		}
+
+		// console.dir({ errors }, { depth: null });
 
 		// there is only one "layer" -- the virtual layer of dimensions.
 		// and, we've baked learning into the inputs.
 		for (const [p, input] of inputs.entries()) {
 			input.learn(p, errors);
 		}
+
+		// console.dir({ inputs }, { depth: null });
+		// console.log('############\n\n\n');
+		// if (this.lastNegativeSample > 5) process.exit();
+
 	}
 
 	/**
@@ -295,7 +303,7 @@ export class Brain {
 			return a.confidence - b.confidence;
 		}).reverse();
 
-		const topN = results.slice(0, 5);
+		const topN = results.slice(0, 20);
 
 		console.log(JSON.stringify({ dimensions, inputTokens, topN }, null, 2))
 
@@ -305,6 +313,6 @@ export class Brain {
 	toJSON() {
 		return {
 			outputs: this.outputs
-		}
+		};
 	}
 }

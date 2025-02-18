@@ -82,16 +82,16 @@ export const TRAINING_DATA = function * (count) {
 }
 
 export const TRAINING_DATA_COUNT = tokens.length;
-export const TEST_CASES = [...TRAINING_DATA(3)];
+export const TEST_CASES = [[...TRAINING_DATA(3)].pop()];
 
-export const TRAINING_LOOPS = 5;
+export const TRAINING_LOOPS = 1;
 
-const DIMENSIONS = Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
+const DIMENSIONS = 10; // Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
 
 console.log(`Creating brain with ${DIMENSIONS} dimensions.`);
 export const brain = new Brain({
 	rate: 0.05,
-	activation: x => x > 0.5 ? 1 : 0,
+	activation: x => Math.max(Math.min(x, 1), -1),
 	derivative: _x => 1,
 	dimensions: DIMENSIONS,
 	positions: 4
@@ -100,11 +100,13 @@ console.log('Brain created');
 
 export const TEST = {
 	matches: (rawOutput, rawExpected) => {
-		return 1;
-		// const output = rawOutput.map(v => v > 0.5 ? true : false);
-		// const expected = rawExpected.map(v => v === 1 ? true : false);
-		// console.log({rawOutput, rawExpected, output, expected});
-		// return JSON.stringify(output) == JSON.stringify(expected);
+		const [ expectedToken ] = rawExpected;
+
+		/**
+		 * @type {string[]}
+		 */
+		const foundTokens = rawOutput.map(o => o.token);
+		return foundTokens.some(t => t === expectedToken);
 	},
 
 	/**
@@ -116,11 +118,8 @@ export const TEST = {
 		return [
 			'man',
 			'woman',
-			// 'human',
 			'person',
-			'thing',
-			// 'found',
-			// 'science'
+			'glacier',
 		].map(w => ({ [w]: brain.getOutput(w).dimensions }));
 	}
 };
