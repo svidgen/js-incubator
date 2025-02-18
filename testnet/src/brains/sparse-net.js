@@ -182,7 +182,7 @@ export class Brain {
 		if (!input) {
 			input = new Input({
 				activation: this.activation,
-				derivative: this.derivation,
+				derivative: this.dF,
 				dimensions: this.dimensions,
 				positions: this.positions,
 				rate: this.rate,
@@ -282,6 +282,7 @@ export class Brain {
 				dimensions[d] += input.positions[p][d];
 			}
 		}
+		console.log('pre activate dims', dimensions);
 		dimensions = dimensions.map(d => this.activation(d));
 
 		/**
@@ -305,7 +306,9 @@ export class Brain {
 
 		const topN = results.slice(0, 20);
 
-		console.log(JSON.stringify({ dimensions, inputTokens, topN }, null, 2))
+		const glacier = results.filter(r => r.token === 'glacier');
+
+		console.log(JSON.stringify({ dimensions, inputTokens, topN, glacier }, null, 2))
 
 		return topN;
 	}

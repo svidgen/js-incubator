@@ -84,13 +84,13 @@ export const TRAINING_DATA = function * (count) {
 export const TRAINING_DATA_COUNT = tokens.length;
 export const TEST_CASES = [[...TRAINING_DATA(3)].pop()];
 
-export const TRAINING_LOOPS = 1;
+export const TRAINING_LOOPS = 5;
 
 const DIMENSIONS = 10; // Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
 
 console.log(`Creating brain with ${DIMENSIONS} dimensions.`);
 export const brain = new Brain({
-	rate: 0.05,
+	rate: 0.25,
 	activation: x => Math.max(Math.min(x, 1), -1),
 	derivative: _x => 1,
 	dimensions: DIMENSIONS,
