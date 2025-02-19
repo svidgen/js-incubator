@@ -95,7 +95,7 @@ export const TEST_CASES = [...TRAINING_DATA(100)];
 
 export const TRAINING_LOOPS = 5;
 
-const DIMENSIONS = 10; // Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
+const DIMENSIONS = 50; // Math.floor((Math.log(dictionary.size) / Math.log(2))) + 1;
 
 console.log(`Creating brain with ${DIMENSIONS} dimensions.`);
 
